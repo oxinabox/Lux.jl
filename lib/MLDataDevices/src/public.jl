@@ -368,18 +368,9 @@ end
 # For Lux, typically models only has these 3 datastructures so we should be mostly fine.
 for (dev) in (:CPU, :CUDA, :AMDGPU, :Metal, :oneAPI, :XLA)
     ldev = Symbol(dev, :Device)
-    @eval begin
-        function (D::$(ldev))(x::AbstractArray{T}) where {T}
-            if isbitstype(T) || Internal.special_aos(x) || x isa Adapt.WrappedArray
-                return Adapt.adapt(D, x)
-            end
-            return map(D, x)
-        end
-        (D::$(ldev))(x::Union{Tuple, NamedTuple}) = map(D, x)
-        function (D::$(ldev))(x)
-            isleaf(x) && return Adapt.adapt(D, x)
-            return Functors.fmap(D, x; exclude=isleaf)
-        end
+    @eval function (D::$(ldev))(x)
+        isleaf(x) && return Adapt.adapt(D, x)
+        return Functors.fmap(D, x; exclude=isleaf)
     end
 end
 
